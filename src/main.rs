@@ -2,7 +2,7 @@ use std;
 
 
 fn main() {
-    let contents = std::fs::read_to_string("tatoo").expect("Failed to read input");
+    let contents = std::fs::read_to_string("tatoo").unwrap();
 
     for l in contents.lines() {
         let message = l
