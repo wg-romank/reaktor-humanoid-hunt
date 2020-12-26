@@ -1,27 +1,65 @@
 use std::collections::HashMap;
 
-fn main() {
-    let contents = std::fs::read_to_string("signal").unwrap();
-
-    let count: HashMap<char, i32> = contents
-        .chars()
-        .collect::<Vec<char>>()
-        .into_iter()
+fn most_frequent_char(candidates: &Vec<char>) -> char {
+    let mut max_key = -1;
+    let cmap = candidates
+        .iter()
         .fold(HashMap::new(), |mut map, c| {
             let previous = map.remove(&c).unwrap_or(0);
-            map.insert(c, previous + 1);
+            let new_val = previous + 1;
+            map.insert(c, new_val);
+
+            if new_val > max_key {
+                max_key = new_val
+            };
+
             map
         });
 
-    let mut sorted_count = count
-        .into_iter()
-        .collect::<Vec<(char, i32)>>();
+    let mut result: char = ' ';
 
-    sorted_count.sort_by_key(|k| -k.1);
+    for (k, v) in cmap {
+        if max_key == v {
+            result = *k;
+            break;
+        };
+    };
 
-    println!("{:#?}", &sorted_count);
+    result
+}
 
-    let password = sorted_count.into_iter().map(|(k, v)| k).collect::<String>();
+fn most_frequent_after(signal: &Vec<char>, c: char) -> char {
+    let (_, candidates): (char, Vec<char>) = signal
+        .iter()
+        .fold((' ', Vec::new()), |(prev, mut acc), cc| {
+            if prev == c {
+                acc.push(*cc);
+            };
 
-    println!("{}", password);
+            (*cc, acc)
+        });
+
+    most_frequent_char(&candidates)
+}
+
+fn main() {
+    let contents = std::fs::read_to_string("signal").unwrap();
+
+    let signal = contents
+        .chars()
+        .collect::<Vec<char>>();
+
+    let first = most_frequent_char(&signal);
+
+    let mut next = first;
+    loop {
+        print!("{}", next);
+        next = most_frequent_after(&signal, next);
+
+        if next == ';' {
+            break
+        }
+    }
+
+    println!();
 }
