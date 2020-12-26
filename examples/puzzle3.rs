@@ -9,12 +9,12 @@ enum Contents {
     Finish,
 }
 
-fn index(x: u32, y: u32, w: u32) -> usize {
-    (x * w + y) as usize
+fn index(x: u32, y: u32, w: usize) -> usize {
+    (x as usize) * w + y as usize
 }
 
-fn inverted_index(i: usize, w: u32) -> (u32, u32) {
-    (i as u32/ w, i as u32 % w)
+fn inverted_index(i: usize, w: usize) -> (u32, u32) {
+    ((i / w) as u32, (i % w) as u32)
 }
 
 fn parse_coordinates(s: &str) -> (u32, u32) {
@@ -33,8 +33,27 @@ fn main() {
 
     for l in contents.lines() {
         let items = l.split(' ').collect::<Vec<&str>>();
-        let (x, y) = parse_coordinates(items[0]);
-        println!("{} {}", x, y);
+        let (mut x, mut y) = parse_coordinates(items[0]);
+
+        field[index(x, y, w)] = Contents::Empty;
+
+        if items.len() > 1 {
+            let steps = items[1].split(',').collect::<Vec<&str>>();
+
+            for s in steps {
+                let to_set = match s {
+                    "S" => Contents::Start,
+                    "F" => Contents::Finish,
+                    "U" => { y += 1; Contents::Empty },
+                    "D" => { y -= 1; Contents::Empty },
+                    "L" => { x -= 1; Contents::Empty },
+                    "R" => { x += 1; Contents::Empty },
+                    _ => Contents::Wall,
+                };
+
+                field[index(x, y, w)] = to_set;
+            }
+        }
     }
 
     // println!("{}", contents);
