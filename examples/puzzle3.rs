@@ -1,5 +1,5 @@
 use std;
-
+use std::fmt;
 
 #[derive(Clone)]
 enum Contents {
@@ -7,6 +7,17 @@ enum Contents {
     Wall,
     Start,
     Finish,
+}
+
+impl fmt::Display for Contents {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Contents::Empty => write!(f, "."),
+            Contents::Wall => write!(f, "x"),
+            Contents::Start => write!(f, "s"),
+            Contents::Finish => write!(f, "f"),
+        }
+    }
 }
 
 fn index(x: u32, y: u32, w: usize) -> usize {
@@ -22,6 +33,15 @@ fn parse_coordinates(s: &str) -> (u32, u32) {
     (items[0].parse::<u32>().unwrap(), items[1].parse::<u32>().unwrap())
 }
 
+fn display_field(field: &Vec<Contents>, w: usize) {
+    for i in 0..w {
+        for j in 0..w {
+            print!("{}", field[index(i as u32, j as u32, w)]);
+        }
+        println!();
+    }
+}
+
 fn main() {
     let contents = std::fs::read_to_string("neural-strands").unwrap();
 
@@ -34,6 +54,7 @@ fn main() {
     for l in contents.lines() {
         let items = l.split(' ').collect::<Vec<&str>>();
         let (mut x, mut y) = parse_coordinates(items[0]);
+        x += w as u32 / 2; y += h as u32 / 2;
 
         field[index(x, y, w)] = Contents::Empty;
 
@@ -56,5 +77,6 @@ fn main() {
         }
     }
 
+    display_field(&field, w);
     // println!("{}", contents);
 }
