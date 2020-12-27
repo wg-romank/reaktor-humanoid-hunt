@@ -90,23 +90,23 @@ fn main() {
         }
     }
 
-    // let mut Q = vec![(start_x, start_y)];
-    // let mut v = (start_x, start_y);
-    // let mut seen = HashSet::new();
+    let mut Q = vec![(start_x, start_y)];
+    let mut v = (start_x, start_y);
+    let mut seen = HashSet::new();
 
-    // while field[index(v.0, v.1, w)] != Contents::Finish {
-    //     v = Q.remove(0);
-    //     seen.insert(v);
+    while field[index(v.0, v.1, w)] != Contents::Finish {
+        v = Q.remove(0);
+        seen.insert(v);
 
-    //     let mut nb = neighboors(&field, w, v.0, v.1)
-    //         .into_iter()
-    //         .filter(|a| !seen.contains(a))
-    //         .collect::<Vec<(u32, u32)>>();
+        let mut nb = neighboors(&field, w, v.0, v.1)
+            .into_iter()
+            .filter(|a| !seen.contains(a))
+            .collect::<Vec<(u32, u32)>>();
 
-    //     Q.append(&mut nb);
-    // }
+        Q.append(&mut nb);
+    }
 
     // println!("Start point {} {}", start_x, start_y);
-    display_field(&field, w);
+    // display_field(&field, w);
     // println!("{}", contents);
 }
