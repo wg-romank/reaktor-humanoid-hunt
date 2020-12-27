@@ -64,9 +64,7 @@ fn direction(from: (u32, u32), to: (u32, u32)) -> char {
     }
 }
 
-fn main() {
-    let contents = std::fs::read_to_string("neural-strands").unwrap();
-
+fn fill_field(contents: String) -> (Vec<Contents>, usize, (u32, u32)) {
     let mut field = Vec::new();
     let w = 1000;
     let h = 1000;
@@ -102,8 +100,12 @@ fn main() {
         }
     }
 
-    let mut Q = vec![(start_x, start_y)];
-    let mut v = (start_x, start_y);
+    (field, w, (start_x, start_y))
+}
+
+fn bfs(field: Vec<Contents>, w: usize, start: (u32, u32)) -> Vec<(u32, u32)> {
+    let mut Q = vec![(start.0, start.1)];
+    let mut v = (start.0, start.1);
     let mut seen = HashSet::new();
     let mut backtrack = HashMap::new();
     let mut path = Vec::new();
@@ -131,6 +133,16 @@ fn main() {
         v = backtrack[&v];
         path.insert(0, v);
     }
+
+    path
+}
+
+fn main() {
+    let contents = std::fs::read_to_string("neural-strands").unwrap();
+
+    let (field, w, start) = fill_field(contents);
+
+    let path = bfs(field, w, start);
 
     let mut result = Vec::new();
 
