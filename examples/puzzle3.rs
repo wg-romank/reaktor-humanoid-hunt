@@ -11,6 +11,104 @@ enum Contents {
     Finish,
 }
 
+#[derive(Debug, Clone)]
+struct FieldCoordinate {
+    x: u32,
+    y: u32,
+}
+
+impl FieldCoordinate {
+    fn new(s: &str, w: usize, h: usize) -> FieldCoordinate {
+        let items = s.split(',').collect::<Vec<&str>>();
+        FieldCoordinate {
+            x: items[0].parse::<u32>().unwrap() + w as u32 / 2,
+            y: items[1].parse::<u32>().unwrap() + h as u32 / 2,
+        }
+    }
+
+    fn move_self(&mut self, to: String) -> &FieldCoordinate {
+        match to {
+            "U" => self.y -= 1,
+            "D" => self.y += 1,
+            "L" => self.x -= 1,
+            "R" => self.x += 1,
+        };
+
+        self
+    }
+
+    fn direction(&self, to: &FieldCoordinate) -> char {
+        match (to.x as i32 - self.x as i32, to.y as i32 - self.y as i32) {
+            (1, 0) => 'R',
+            (-1, 0) => 'L',
+            (0, 1) => 'D',
+            (0, -1) => 'U',
+            _ => panic!("Should not be here {:#?} {:#?}", self, to),
+        }
+    }
+}
+
+struct Field {
+    field: Vec<Contents>,
+    w: usize,
+    h: usize,
+}
+
+impl Field {
+    fn new(contents: String) -> (Field, FieldCoordinate) {
+        let w = 1000;
+        let h = 1000;
+    
+        let mut start = FieldCoordinate { x: 0, y: 0 };
+    
+        let mut field = Vec::new();
+        field.resize(w * h, Contents::Wall);
+    
+        for l in contents.lines() {
+            let items = l.split(' ').collect::<Vec<&str>>();
+            let point = FieldCoordinate::new(items[0]);
+    
+            field[index(x, y, w)] = Contents::Empty;
+    
+            if items.len() > 1 {
+                let steps = items[1].split(',').collect::<Vec<&str>>();
+    
+                for s in steps {
+                    let to_set = match s {
+                        "S" => { start_x = x; start_y = y; Contents::Start },
+                        "F" => Contents::Finish,
+                        "U" => { y -= 1; Contents::Empty },
+                        "D" => { y += 1; Contents::Empty },
+                        "L" => { x -= 1; Contents::Empty },
+                        "R" => { x += 1; Contents::Empty },
+                        _ => Contents::Wall,
+                    };
+    
+                    field[index(x, y, w)] = to_set;
+                }
+            }
+        }
+
+        Field { field, w, h, start: FieldCoordinate { x: start_x, x: start_y } }
+    }
+
+    fn index(&self, u: FieldCoordinate) -> Contents {
+        let (x, y) = (u.x, u.y);
+        self[(x as usize) * w + y as usize]
+    }
+
+    fn neighboors(&self, u: FieldCoordinate) -> Vec<FieldCoordinate> {
+        let (x, y) = (u.x, u.y);
+
+        vec![
+            FieldCoordinate { x: x + 1, y },
+            FieldCoordinate { x: x - 1, y },
+            FieldCoordinate { x, y: y + 1 },
+            FieldCoordinate { x, y: y - 1 },
+        ].into_iter().filter(|(x, y)| { self.index(*x, *y) != Contents::Wall }).collect()
+    }
+}
+
 impl fmt::Display for Contents {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -22,19 +120,6 @@ impl fmt::Display for Contents {
     }
 }
 
-fn index(x: u32, y: u32, w: usize) -> usize {
-    (x as usize) * w + y as usize
-}
-
-fn inverted_index(i: usize, w: usize) -> (u32, u32) {
-    ((i / w) as u32, (i % w) as u32)
-}
-
-fn parse_coordinates(s: &str) -> (u32, u32) {
-    let items = s.split(',').collect::<Vec<&str>>();
-    (items[0].parse::<u32>().unwrap(), items[1].parse::<u32>().unwrap())
-}
-
 fn display_field(field: &Vec<Contents>, w: usize) {
     for i in 0..w {
         for j in 0..w {
@@ -44,81 +129,23 @@ fn display_field(field: &Vec<Contents>, w: usize) {
     }
 }
 
-fn neighboors(fields: &Vec<Contents>, w: usize, x: u32, y: u32) -> Vec<(u32, u32)> {
-    vec![
-        (x + 1, y),
-        (x - 1, y),
-        (x, y + 1),
-        (x, y - 1),
-    ].into_iter().filter(|(x, y)| { fields[index(*x, *y, w)] != Contents::Wall }).collect()
-}
+fn bfs(field: Field, start: FieldCoordinate) -> Vec<FieldCoordinate> {
+    let mut Q = vec![start];
+    let mut v = start;
 
-fn direction(from: (u32, u32), to: (u32, u32)) -> char {
-    // x y
-    match (to.0 as i32 - from.0 as i32, to.1 as i32 - from.1 as i32) {
-        (1, 0) => 'R',
-        (-1, 0) => 'L',
-        (0, 1) => 'D',
-        (0, -1) => 'U',
-        _ => panic!("Should not be here {:#?} {:#?}", to, from),
-    }
-}
-
-fn fill_field(contents: String) -> (Vec<Contents>, usize, (u32, u32)) {
-    let mut field = Vec::new();
-    let w = 1000;
-    let h = 1000;
-
-    let mut start_x = 0;
-    let mut start_y = 0;
-
-    field.resize(w * h, Contents::Wall);
-
-    for l in contents.lines() {
-        let items = l.split(' ').collect::<Vec<&str>>();
-        let (mut x, mut y) = parse_coordinates(items[0]);
-        x += w as u32 / 2; y += h as u32 / 2;
-
-        field[index(x, y, w)] = Contents::Empty;
-
-        if items.len() > 1 {
-            let steps = items[1].split(',').collect::<Vec<&str>>();
-
-            for s in steps {
-                let to_set = match s {
-                    "S" => { start_x = x; start_y = y; Contents::Start },
-                    "F" => Contents::Finish,
-                    "U" => { y -= 1; Contents::Empty },
-                    "D" => { y += 1; Contents::Empty },
-                    "L" => { x -= 1; Contents::Empty },
-                    "R" => { x += 1; Contents::Empty },
-                    _ => Contents::Wall,
-                };
-
-                field[index(x, y, w)] = to_set;
-            }
-        }
-    }
-
-    (field, w, (start_x, start_y))
-}
-
-fn bfs(field: Vec<Contents>, w: usize, start: (u32, u32)) -> Vec<(u32, u32)> {
-    let mut Q = vec![(start.0, start.1)];
-    let mut v = (start.0, start.1);
     let mut seen = HashSet::new();
-    let mut backtrack = HashMap::new();
-    let mut path = Vec::new();
 
-    while field[index(v.0, v.1, w)] != Contents::Finish {
+    let mut backtrack = HashMap::new();
+
+    while field.index(v) != Contents::Finish {
         v = Q.pop().unwrap();
 
         seen.insert(v);
 
-        let mut nb = neighboors(&field, w, v.0, v.1)
+        let mut nb = field.neighboors(v)
             .into_iter()
             .filter(|a| !seen.contains(a))
-            .collect::<Vec<(u32, u32)>>();
+            .collect::<Vec<FieldCoordinate>>();
 
         for n in nb.clone() {
             backtrack.insert(n, v);
@@ -127,9 +154,11 @@ fn bfs(field: Vec<Contents>, w: usize, start: (u32, u32)) -> Vec<(u32, u32)> {
         Q.append(&mut nb);
     }
 
+    let mut path = Vec::new();
+
     path.insert(0, v);
 
-    while field[index(v.0, v.1, w)] != Contents::Start {
+    while field.index(v) != Contents::Start {
         v = backtrack[&v];
         path.insert(0, v);
     }
@@ -140,14 +169,14 @@ fn bfs(field: Vec<Contents>, w: usize, start: (u32, u32)) -> Vec<(u32, u32)> {
 fn main() {
     let contents = std::fs::read_to_string("neural-strands").unwrap();
 
-    let (field, w, start) = fill_field(contents);
+    let (field, start) = Field::new(contents);
 
-    let path = bfs(field, w, start);
+    let path = bfs(field, start);
 
     let mut result = Vec::new();
 
     for i in 0..path.len() - 1 {
-        result.push(direction(path[i], path[i + 1]));
+        result.push(path[i].direction(path[i + 1]));
     }
 
     println!("{}", result.iter().collect::<String>());
