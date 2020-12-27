@@ -1,7 +1,8 @@
 use std;
 use std::fmt;
+use std::collections::HashSet;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum Contents {
     Empty,
     Wall,
@@ -42,12 +43,24 @@ fn display_field(field: &Vec<Contents>, w: usize) {
     }
 }
 
+fn neighboors(fields: &Vec<Contents>, w: usize, x: u32, y: u32) -> Vec<(u32, u32)> {
+    vec![
+        (x + 1, y),
+        (x - 1, y),
+        (x, y + 1),
+        (x, y - 1),
+    ].into_iter().filter(|(x, y)| { fields[index(*x, *y, w)] != Contents::Wall }).collect()
+}
+
 fn main() {
     let contents = std::fs::read_to_string("neural-strands").unwrap();
 
     let mut field = Vec::new();
     let w = 1000;
     let h = 1000;
+
+    let mut start_x = 0;
+    let mut start_y = 0;
 
     field.resize(w * h, Contents::Wall);
 
@@ -63,7 +76,7 @@ fn main() {
 
             for s in steps {
                 let to_set = match s {
-                    "S" => Contents::Start,
+                    "S" => { start_x = x; start_y = y; Contents::Start },
                     "F" => Contents::Finish,
                     "U" => { y += 1; Contents::Empty },
                     "D" => { y -= 1; Contents::Empty },
@@ -77,6 +90,23 @@ fn main() {
         }
     }
 
-    display_field(&field, w);
+    let mut Q = vec![(start_x, start_y)];
+    let mut v = (start_x, start_y);
+    let mut seen = HashSet::new();
+
+    while field[index(v.0, v.1, w)] != Contents::Finish {
+        v = Q.remove(0);
+        seen.insert(v);
+
+        let mut nb = neighboors(&field, w, v.0, v.1)
+            .into_iter()
+            .filter(|a| !seen.contains(a))
+            .collect::<Vec<(u32, u32)>>();
+
+        Q.append(&mut nb);
+    }
+
+    println!("Start point {} {}", start_x, start_y);
+    // display_field(&field, w);
     // println!("{}", contents);
 }
