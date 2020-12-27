@@ -1,6 +1,7 @@
 use std;
 use std::fmt;
 use std::collections::HashSet;
+use std::collections::HashMap;
 
 #[derive(Clone, PartialEq)]
 enum Contents {
@@ -52,6 +53,17 @@ fn neighboors(fields: &Vec<Contents>, w: usize, x: u32, y: u32) -> Vec<(u32, u32
     ].into_iter().filter(|(x, y)| { fields[index(*x, *y, w)] != Contents::Wall }).collect()
 }
 
+fn direction(from: (u32, u32), to: (u32, u32)) -> char {
+    // x y
+    match (to.0 as i32 - from.0 as i32, to.1 as i32 - from.1 as i32) {
+        (1, 0) => 'R',
+        (-1, 0) => 'L',
+        (0, 1) => 'D',
+        (0, -1) => 'U',
+        _ => panic!("Should not be here {:#?} {:#?}", to, from),
+    }
+}
+
 fn main() {
     let contents = std::fs::read_to_string("neural-strands").unwrap();
 
@@ -93,9 +105,12 @@ fn main() {
     let mut Q = vec![(start_x, start_y)];
     let mut v = (start_x, start_y);
     let mut seen = HashSet::new();
+    let mut backtrack = HashMap::new();
+    let mut path = Vec::new();
 
     while field[index(v.0, v.1, w)] != Contents::Finish {
-        v = Q.remove(0);
+        v = Q.pop().unwrap();
+
         seen.insert(v);
 
         let mut nb = neighboors(&field, w, v.0, v.1)
@@ -103,10 +118,25 @@ fn main() {
             .filter(|a| !seen.contains(a))
             .collect::<Vec<(u32, u32)>>();
 
+        for n in nb.clone() {
+            backtrack.insert(n, v);
+        }
+
         Q.append(&mut nb);
     }
 
-    // println!("Start point {} {}", start_x, start_y);
-    // display_field(&field, w);
-    // println!("{}", contents);
+    path.insert(0, v);
+
+    while field[index(v.0, v.1, w)] != Contents::Start {
+        v = backtrack[&v];
+        path.insert(0, v);
+    }
+
+    let mut result = Vec::new();
+
+    for i in 0..path.len() - 1 {
+        result.push(direction(path[i], path[i + 1]));
+    }
+
+    println!("{}", result.iter().collect::<String>());
 }
