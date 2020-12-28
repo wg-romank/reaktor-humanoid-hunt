@@ -103,7 +103,7 @@ fn fill_field(contents: String) -> (Vec<Contents>, usize, (u32, u32)) {
     (field, w, (start_x, start_y))
 }
 
-fn bfs(field: Vec<Contents>, w: usize, start: (u32, u32)) -> Vec<(u32, u32)> {
+fn dfs(field: Vec<Contents>, w: usize, start: (u32, u32)) -> Vec<(u32, u32)> {
     let mut Q = vec![(start.0, start.1)];
     let mut v = (start.0, start.1);
     let mut seen = HashSet::new();
@@ -142,7 +142,7 @@ fn main() {
 
     let (field, w, start) = fill_field(contents);
 
-    let path = bfs(field, w, start);
+    let path = dfs(field, w, start);
 
     let mut result = Vec::new();
 
